@@ -4,7 +4,7 @@ import java.io.*;
 public class main {
 
 	//盤面の値を所持した二次元配列
-	private static int[][] banmen;
+	private static int[][] banmen = new int[8][8];
 
 	//黒が2、白が1
 	private static int turn;
@@ -12,36 +12,66 @@ public class main {
 	//入力された値を保持する変数
 	private static int place;
 
+	//ビット演算で使用する変数
+	private static int bit = 3;
+
+	//盤面の黒の石の数
+	private static int black = 0;
+
+	//盤面の白の石の数
+	private static int white = 0;
+
 	public static void main(String[] args) {
 		turn = 2;
-		banmen = new int[8][8];
 		clear(banmen);
-		display();
-		if(turn == 2){
-			System.out.println("●のターン");
-		}else if(turn == 1){
-			System.out.println("○のターン");
-		}
-		place = input();
 
-		int i = place / 10;
-		int j = place % 10;
 
-		white_flip(i, j);
-		display();
+		do{
+			display();
+			//盤面がすべて埋まるか、片方の石が無くなった際、終了する
+			while(game_end() != 0 || black != 0 || white != 0){
+				if(turn == 2){
+					if(pass() == 1){
+						System.out.println("●のターン");
+						place = input();
+						int i = place / 10;
+					    int j = place % 10;
+					    flip(i, j);
+					    display();
+					    turn = 1;
+					}
+				}else if(turn == 1){
+					if(pass() == 1){
+						System.out.println("○のターン");
+						place = input();
+						int i = place / 10;
+					    int j = place % 10;
+					    flip(i, j);
+					    display();
+					    turn = 2;
+					}
+				}
+			}
 
-//		do{
-//
-//			display();
-//
-//
-//
-//
-//		}while(retry() != 0);
+			if(black < white){
+				System.out.println(white + "枚で白の勝ち");
+			}else if(black == white){
+				System.out.println(black + "枚で引き分け");
+			}else{
+				System.out.println(black + "枚で黒の勝ち");
+			}
+
+
+		}while(retry() != 0);
 
 	}
 
-	//盤面を初期化するメソッド
+	/**
+	 * 盤面の情報を保持する配列を初期化するメソッド
+	 *
+	 * @param int型の二次元配列
+	 * @return 値を代入した二次元配列
+	 */
 	public static int[][] clear(int banmen[][]){
 		for(int i = 0; i < 8; i++){
 			for(int j = 0; j < 8; j++){
@@ -59,29 +89,11 @@ public class main {
 	}
 
 
-	//ゲーム進行メソッド
-//	public static void play(){
-//
-//
-//		while(turn < 3){
-//			if(turn == 2){
-//				System.out.println("●のターン");
-//			}else if(turn == 1){
-//				System.out.println("○のターン");
-//			}
-//			if(turn == 2){
-//				turn = 1;
-//			}else if(turn == 1){
-//				turn = 2;
-//			}
-//
-//
-//		}
-//
-//		judge();
-//
-//	}
-	//盤面をコンソールに出力するメソッド
+
+
+	/**
+	 * 配列の情報をコンソールに出力するメソッド
+	 */
 	public static void display(){
 		System.out.print("   ");
 		for(int i = 0; i < 8; i++){
@@ -95,8 +107,10 @@ public class main {
 			}
 			for(int j = 0; j < 8; j++){
 				if(banmen[i][j] == 1){
+					white++;
 					System.out.print("○ ");
 				}else if(banmen[i][j] == 2){
+					black++;
 					System.out.print("● ");
 				}else{
 					System.out.print("＊ ");
@@ -105,9 +119,15 @@ public class main {
 			System.out.println();
 		}
 	}
-	//オセロを続けるか、やめるか選ぶメソッド
+
+	/**
+	 * オセロを続けるか、やめるか選ぶメソッド
+	 * @return コンソールから入力された値
+	 */
 	public static int retry(){
 		clear(banmen);
+		black = 0;
+		white = 0;
 		int x;
 		System.out.print("ゲームを続けますか？はい=1、いいえ=0 ");
         InputStreamReader isr = new InputStreamReader(System.in);
@@ -120,341 +140,605 @@ public class main {
         }
         return x;
 	}
-	//盤面の石の数を数えるメソッド
-	public static void judge(){
-		int black = 0;
-		int white = 0;
-		for(int i = 0; i < 8; i++){
-			for(int j = 0; j < 8; j++){
-				if(banmen[i][j] == 2){
-					black++;
-				}else if(banmen[i][j] == 1){
-					white++;
+
+
+
+	/**
+	 * 相手の石を裏返すメソッド
+	 *
+	 * @param i コンソールから入力された十の位の数字
+	 * @param j コンソールから入力された一の位の数字
+	 */
+	public static void flip(int i, int j){
+
+		//配列[0][0]の時、右、下、右斜め下にしか検索しない
+		if(i == 0 && j == 0){
+
+			//右方向への処理
+			if(banmen[i][j + 1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
 				}
 			}
-		}
-		if(black < white){
-			System.out.println("白の勝ち");
-		}else if(black > white){
-			System.out.println("黒の勝ち");
-		}else if(black == white){
-			System.out.println("引き分け");
+
+			//右斜め下方向への処理
+			if(banmen[i+1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i + 1; a < 8 || b < 8; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+		//配列[0][7]の時、左、下、左斜め下にしか検索しない
+		}else if(i == 0 && j == 7){
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め下方向への処理
+			if(banmen[i+1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i + 1; a < 8 || b > 0; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+		//配列[7][0]の時、上、右、右斜め上にしか検索しない
+		}else if(i == 7 && j == 0){
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め上方向への処理
+			if(banmen[i-1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i - 1; a > 0 || b < 8; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//右方向への処理
+			if(banmen[i][j+1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+		//配列[7][7]の時、左、上、左斜め上にしか
+		}else if(i == 7 && j == 7){
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め上方向への処理
+			if(banmen[i-1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i - 1; a > 0 || b > 0; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+		//配列[0][j]の時、上側を検索しない
+		}else if(i == 0){
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め下方向への処理
+			if(banmen[i+1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i + 1; a < 8 || b > 0; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め下方向への処理
+			if(banmen[i+1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i + 1; a < 8 || b < 8; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//右方向への処理
+			if(banmen[i][j+1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+		//配列[i][7]の時、右側を検索しない
+		}else if(j == 7){
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め上方向への処理
+			if(banmen[i-1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i - 1; a > 0 || b > 0; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め下方向への処理
+			if(banmen[i+1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i + 1; a < 8 || b > 0; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+
+		//配列[i][0]の時、左側を検索しない
+		}else if(j == 0){
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め上方向への処理
+			if(banmen[i-1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i - 1; a > 0 || b < 8; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//右方向への処理
+			if(banmen[i][j+1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め下方向への処理
+			if(banmen[i+1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i + 1; a < 8 || b < 8; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+
+		//配列[7][j]の時、下側を検索しない
+		}else if(i == 7){
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//左斜め上方向への処理
+			if(banmen[i-1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i - 1; a > 0 || b > 0; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め上方向への処理
+			if(banmen[i-1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i - 1; a > 0 || b < 8; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//右方向への処理
+			if(banmen[i][j+1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+		//他の座標は周りをすべて調べる
+		}else{
+
+			//上方向への処理
+			if(banmen[i-1][j] == (turn ^ bit)){
+				for(int a = i - 1; a > 0; a--){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == turn){
+						for(int b = a; b <= i; b++){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//右方向への処理
+			if(banmen[i][j+1] == (turn ^ bit)){
+				for(int a = j + 1; a < 8; a++){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b >= j ; b--){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//下方向への処理
+			if(banmen[i+1][j] == (turn ^ bit)){
+				for(int a = i + 1; a < 8; a++){
+					if(banmen[a][j] == 0){
+						break;
+					}else if(banmen[a][j] == 2){
+						for(int b = a; b >= i; b--){
+							banmen[b][j] = turn;
+						}
+					}
+				}
+			}
+
+			//左方向への処理
+			if(banmen[i][j-1] == (turn ^ bit)){
+				for(int a = j - 1; a < 0; a--){
+					if(banmen[i][a] == 0){
+						break;
+					}else if(banmen[i][a] == turn){
+						for(int b = a; b <= j ; b++){
+							banmen[i][b] = turn;
+						}
+					}
+				}
+			}
+
+			//右斜め上方向への処理
+			if(banmen[i-1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i - 1; a > 0 || b < 8; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//右斜め下方向への処理
+			if(banmen[i+1][j+1] == (turn ^ bit)){
+				int a; int b = j + 1;
+				for(a = i + 1; a < 8 || b < 8; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b--] = turn;
+						}
+					}
+					b++;
+				}
+			}
+
+			//左斜め下方向への処理
+			if(banmen[i+1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i + 1; a < 8 || b > 0; a++){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c >= i; c--){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
+
+			//左斜め上方向への処理
+			if(banmen[i-1][j-1] == (turn ^ bit)){
+				int a; int b = j - 1;
+				for(a = i - 1; a > 0 || b > 0; a--){
+					if(banmen[a][b] == 0){
+						break;
+					}else if(banmen[a][b] == turn){
+						for(int c = a; c <= i; c++){
+							banmen[c][b++] = turn;
+						}
+					}
+					b--;
+				}
+			}
 		}
 	}
 
-	//白の石を挟めるか調べるメソッド
-	public static int black_check(int i, int j){
 
-		//上方向を調べる
-		if(banmen[i-1][j] == 1){
-			for(int a = i - 1; a > 0; a--){
-				if(banmen[a][j] == 2){
-					return 1;
-				}
-			}
-
-		//右斜め上方向を調べる
-		}else if(banmen[i-1][j+1] == 1){
-			int b = j + 1;
-			for(int a = i - 1; a > 0 || b < 8; a--){
-				if(banmen[a][b] == 2){
-					return 1;
-				}
-				b++;
-			}
-
-		//右方向を調べる
-		}else if(banmen[i][j+1] == 1){
-			for(int a = j + 1; a < 8; a++){
-				if(banmen[i][a] == 2){
-					return 1;
-				}
-			}
-
-		//右斜め下方向を調べる
-		}else if(banmen[i+1][j+1] == 1){
-			int b = j + 1;
-			for(int a = i + 1; a < 8 || b < 8; a++){
-				if(banmen[a][b] == 2){
-					return 1;
-				}
-				b++;
-			}
-
-		//下方向を調べる
-		}else if(banmen[i+1][j] == 1){
-			for(int a = i + 1; a < 8; a++){
-				if(banmen[a][j] == 2){
-					return 1;
-				}
-			}
-
-		//左斜め下方向を調べる
-		}else if(banmen[i+1][j-1] == 1){
-			int b = j - 1;
-			for(int a = i + 1; a < 8 || b > 0; a++){
-				if(banmen[a][b] == 2){
-					return 1;
-				}
-				b--;
-			}
-
-		//左方向を調べる
-		}else if(banmen[i][j-1] == 1){
-			for(int a = j - 1; a < 0; a--){
-				if(banmen[i][a] == 2){
-					return 1;
-				}
-			}
-
-		//左斜め上方向を調べる
-		}else if(banmen[i-1][j-1] == 1){
-			int b = j - 1;
-			for(int a = i - 1; a > 0 || b > 0; a--){
-				if(banmen[a][b] == 2){
-					return 1;
-				}
-				b--;
-			}
-		}
-
-		return 0;
-	}
-
-
-	//白の石を裏返すメソッド
-	public static void white_flip(int i, int j){
-		//上方向への処理
-		if(banmen[i-1][j] == 1){
-			for(int a = i - 1; a > 0; a--){
-				if(banmen[a][j] == 0){
-					break;
-				}else if(banmen[a][j] == 2){
-					for(int b = a; b <= i; b++){
-						banmen[b][j] = 2;
-					}
-				}
-			}
-		}
-
-		//右方向への処理
-		if(banmen[i][j+1] == 1){
-			for(int a = j + 1; a < 8; a++){
-				if(banmen[i][a] == 0){
-					break;
-				}else if(banmen[i][a] == 2){
-					for(int b = a; b >= j ; b--){
-						banmen[i][b] = 2;
-					}
-				}
-			}
-		}
-
-		//下方向への処理
-		if(banmen[i+1][j] == 1){
-			for(int a = i + 1; a < 8; a++){
-				if(banmen[a][j] == 0){
-					break;
-				}else if(banmen[a][j] == 2){
-					for(int b = a; b >= i; b--){
-						banmen[b][j] = 2;
-					}
-				}
-			}
-		}
-
-		//左方向への処理
-		if(banmen[i][j-1] == 1){
-			for(int a = j - 1; a < 0; a--){
-				if(banmen[i][a] == 0){
-					break;
-				}else if(banmen[i][a] == 2){
-					for(int b = a; b <= j ; b++){
-						banmen[i][b] = 2;
-					}
-				}
-			}
-		}
-
-		//右斜め上方向への処理
-		if(banmen[i-1][j+1] == 1){
-			int a; int b = j + 1;
-			for(a = i - 1; a > 0 || b < 8; a--){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 2){
-					for(int c = a; c <= i; c++){
-						banmen[c][b--] = 2;
-					}
-				}
-				b++;
-			}
-		}
-
-		//右斜め下方向への処理
-		if(banmen[i+1][j+1] == 1){
-			int a; int b = j + 1;
-			for(a = i + 1; a < 8 || b < 8; a++){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 2){
-					for(int c = a; c >= i; c--){
-						banmen[c][b--] = 2;
-					}
-				}
-				b++;
-			}
-		}
-
-		//左斜め下方向への処理
-		if(banmen[i+1][j-1] == 1){
-			int a; int b = j - 1;
-			for(a = i + 1; a < 8 || b > 0; a++){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 2){
-					for(int c = a; c >= i; c--){
-						banmen[c][b++] = 2;
-					}
-				}
-				b--;
-			}
-		}
-
-		//左斜め上方向への処理
-		if(banmen[i-1][j-1] == 1){
-			int a; int b = j - 1;
-			for(a = i - 1; a > 0 || b > 0; a--){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 2){
-					for(int c = a; c <= i; c++){
-						banmen[c][b++] = 2;
-					}
-				}
-				b--;
-			}
-		}
-
-	}
-	//黒の石を裏返すメソッド
-	public static void black_flip(int i, int j){
-
-		//上方向への処理
-		if(banmen[i-1][j] == 2){
-			for(int a = i - 1; a > 0; a--){
-				if(banmen[a][j] == 0){
-					break;
-				}else if(banmen[a][j] == 1){
-					for(int b = a; b <= i; b++){
-						banmen[b][j] = 1;
-					}
-				}
-			}
-		}
-
-		//右方向への処理
-		if(banmen[i][j+1] == 2){
-			for(int a = j + 1; a < 8; a++){
-				if(banmen[i][a] == 0){
-					break;
-				}else if(banmen[i][a] == 1){
-					for(int b = a; b >= j ; b--){
-						banmen[i][b] = 1;
-					}
-				}
-			}
-		}
-
-		//下方向への処理
-		if(banmen[i+1][j] == 2){
-			for(int a = i + 1; a < 8; a++){
-				if(banmen[a][j] == 0){
-					break;
-				}else if(banmen[a][j] == 1){
-					for(int b = a; b >= i; b--){
-						banmen[b][j] = 1;
-					}
-				}
-			}
-		}
-
-		//左方向への処理
-		if(banmen[i][j-1] == 2){
-			for(int a = j - 1; a < 0; a--){
-				if(banmen[i][a] == 0){
-					break;
-				}else if(banmen[i][a] == 1){
-					for(int b = a; b <= j ; b++){
-						banmen[i][b] = 1;
-					}
-				}
-			}
-		}
-
-
-		//右斜め上方向への処理
-		if(banmen[i-1][j+1] == 2){
-			int a; int b = j + 1;
-			for(a = i - 1; a > 0 || b < 8; a--){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 1){
-					for(int c = a; c <= i; c++){
-						banmen[c][b--] = 1;
-					}
-				}
-				b++;
-			}
-		}
-
-		//右斜め下方向への処理
-		if(banmen[i+1][j+1] == 2){
-			int a; int b = j + 1;
-			for(a = i + 1; a < 8 || b < 8; a++){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 1){
-					for(int c = a; c >= i; c--){
-						banmen[c][b--] = 1;
-					}
-				}
-				b++;
-			}
-		}
-
-		//左斜め下方向への処理
-		if(banmen[i+1][j-1] == 2){
-			int a; int b = j - 1;
-			for(a = i + 1; a < 8 || b > 0; a++){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 1){
-					for(int c = a; c >= i; c--){
-						banmen[c][b++] = 1;
-					}
-				}
-				b--;
-			}
-		}
-
-		//左斜め上方向への処理
-		if(banmen[i-1][j-1] == 2){
-			int a; int b = j - 1;
-			for(a = i - 1; a > 0 || b > 0; a--){
-				if(banmen[a][b] == 0){
-					break;
-				}else if(banmen[a][b] == 1){
-					for(int c = a; c <= i; c++){
-						banmen[c][b++] = 1;
-					}
-				}
-				b--;
-			}
-		}
-	}
-
-	//石を置く場所をコンソールから入力させるメソッド
+	/**
+	 * 石を置く場所を入力するメソッド
+	 * @return 入力された値
+	 */
 	public static int input(){
 		int x;
 		System.out.print("石を置く場所を指定してください");
@@ -469,23 +753,533 @@ public class main {
         return x;
 	}
 
-	//黒が打てるかどうか調べるメソッド
-	public static int black_pass(){
+
+
+
+	/**
+	 * 挟める石があるか調べるメソッド
+	 * @return 挟む石が無ければ0を返す。挟む石があれば1を返す。
+	 */
+	public static int pass(){
 		for(int i = 0; i < 8; i++){
 			for(int j = 0; j < 8; j++){
-				if(banmen[i][j] == 0){
-					if(black_check(i, j) == 1){
-						return 1;
+				//配列[0][0]の時、右、下、右斜め下にしか検索しない
+				if(banmen[i][j] == 0 && i == 0 && j == 0){
+					//右方向に相手の石を見つけた際にその先に自分の石があれば挟むことができるのでパスではない
+					if(banmen[i][j + 1] == (turn ^ bit)){
+						for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+
 					}
-				}
+
+					//下方向への検索
+					if(banmen[i + 1][j] == (turn ^ bit)){
+						for(int a = i + 1; a < 8; a++){
+							if(banmen[a][j] == 0){
+								break;
+							}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+
+					}
+
+					//右斜め下への検索
+					if(banmen[i + 1][j + 1] == (turn ^ bit)){
+						int b = j + 1;
+						for(int a = i + 1; a < 8 || b < 8; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+					}
+
+				//配列[0][7]の時、左、下、左斜め下にしか検索しない
+				}else if(banmen[i][j] == 0 && i == 0 && j == 7){
+
+					//左方向への検索
+					if(banmen[i][j-1] == (turn ^ bit)){
+						for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+
+				    }
+					//下方向への検索
+					if(banmen[i + 1][j] == (turn ^ bit)){
+				    	for(int a = i + 1; a < 8; a++){
+				    		if(banmen[a][j] == 0){
+				    			break;
+				    		}else if(banmen[a][j] == 1){
+								return 1;
+							}
+						}
+
+				    }
+					//左斜め下への検索
+					if(banmen[i + 1][j - 1] == (turn ^ bit)){
+				    	int b = j - 1;
+						for(int a = i + 1; a < 8 || b > 0; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+				    }
+
+				//配列[7][0]の時、上、右、右斜め上にしか検索しない
+			    }else if(banmen[i][j] == 0 && i == 7 && j == 0){
+
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+
+			    	}
+
+			    	//右方向への検索
+			    	if(banmen[i][j + 1] == (turn ^ bit)){
+			    		for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+
+			    	}
+
+			    	//右斜め上方向への検索
+			    	if(banmen[i - 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i - 1; a > 0 || b < 8; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    //配列[7][7]の時、左、上、左斜め上にしか検索しない
+			    }else if(banmen[i][j] == 0 && i == 7 && j == 7){
+
+			    	//左方向への検索
+			    	if(banmen[i][j-1] == (turn ^ bit)){
+			    		for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+			    	}
+			    	//左斜め上方向への検索
+			    	if(banmen[i-1][j-1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i - 1; a > 0 || b > 0; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    //配列[0][j]の時、上側を検索しない
+			    }else if(banmen[i][j] == 0 && i == 0){
+
+			    	//左方向への検索
+			    	if(banmen[i][j-1] == (turn ^ bit)){
+			    		for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+			    	//左斜め下方向への検索
+			    	if(banmen[i + 1][j - 1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i + 1; a < 8 || b > 0; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+			    	//下方向への検索
+			    	if(banmen[i + 1][j] == (turn ^ bit)){
+			    		for(int a = i + 1; a < 8; a++){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//右斜め下方向への検索
+			    	if(banmen[i + 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i + 1; a < 8 || b < 8; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//右方向への検索
+			    	if(banmen[i][j + 1] == (turn ^ bit)){
+			    		for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    //配列[i][0]の時、左側を検索しない
+			    }else if(banmen[i][j] == 0 && j == 0){
+
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+			    				return 1;
+			    			}
+			    		}
+			    	}
+
+			    	//右斜め上方向への検索
+			    	if(banmen[i - 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i - 1; a > 0 || b < 8; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//右方向への検索
+			    	if(banmen[i][j + 1] == (turn ^ bit)){
+			    		for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//右斜め下方向への検索
+			    	if(banmen[i + 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i + 1; a < 8 || b < 8; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//下方向への検索
+			    	if(banmen[i + 1][j] == (turn ^ bit)){
+			    		for(int a = i + 1; a < 8; a++){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    //配列[i][7]の時、右側を検索しない
+			    }else if(banmen[i][j] == 0 && j == 7){
+
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+			    				return 1;
+			    			}
+			    		}
+			    	}
+
+			    	//左斜め上方向への検索
+			    	if(banmen[i-1][j-1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i - 1; a > 0 || b > 0; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    	//左方向への検索
+			    	if(banmen[i][j-1] == (turn ^ bit)){
+			    		for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//左斜め下方向への検索
+			    	if(banmen[i + 1][j - 1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i + 1; a < 8 || b > 0; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    	//下方向への検索
+			    	if(banmen[i + 1][j] == (turn ^ bit)){
+			    		for(int a = i + 1; a < 8; a++){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    //配列[7][j]の時、下側を検索しない
+			    }else if(banmen[i][j] == 0 && i == 7){
+
+			    	//左方向への検索
+			    	if(banmen[i][j-1] == (turn ^ bit)){
+			    		for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//左斜め上方向への検索
+			    	if(banmen[i-1][j-1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i - 1; a > 0 || b > 0; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+			    				return 1;
+			    			}
+			    		}
+			    	}
+
+			    	//右斜め上方向への検索
+			    	if(banmen[i - 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i - 1; a > 0 || b < 8; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//右方向への検索
+			    	if(banmen[i][j + 1] == (turn ^ bit)){
+			    		for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    //他の座標は周りをすべて調べる
+			    }else{
+
+			    	//上方向への検索
+			    	if(banmen[i - 1][j] == (turn ^ bit)){
+			    		for(int a = i - 1; a > 0; a--){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+			    				return 1;
+			    			}
+			    		}
+			    	}
+
+			    	//右斜め上方向への検索
+			    	if(banmen[i - 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i - 1; a > 0 || b < 8; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//右方向への検索
+			    	if(banmen[i][j + 1] == (turn ^ bit)){
+			    		for(int a = j + 1; a < 8; a++){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//右斜め下方向への検索
+			    	if(banmen[i + 1][j + 1] == (turn ^ bit)){
+			    		int b = j + 1;
+						for(int a = i + 1; a < 8 || b < 8; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b++;
+						}
+			    	}
+
+			    	//下方向への検索
+			    	if(banmen[i + 1][j] == (turn ^ bit)){
+			    		for(int a = i + 1; a < 8; a++){
+			    			if(banmen[a][j] == 0){
+			    				break;
+			    			}else if(banmen[a][j] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//左斜め下方向への検索
+			    	if(banmen[i + 1][j - 1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i + 1; a < 8 || b > 0; a++){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    	//左方向への検索
+			    	if(banmen[i][j-1] == (turn ^ bit)){
+			    		for(int a = j - 1; a < 0; a--){
+							if(banmen[i][a] == 0){
+								break;
+							}else if(banmen[i][a] == turn){
+								return 1;
+							}
+						}
+			    	}
+
+			    	//左斜め上方向への検索
+			    	if(banmen[i-1][j-1] == (turn ^ bit)){
+			    		int b = j - 1;
+						for(int a = i - 1; a > 0 || b > 0; a--){
+							if(banmen[a][b] == 0){
+								break;
+							}else if(banmen[a][b] == turn){
+								return 1;
+							}
+							b--;
+						}
+			    	}
+
+			    }
 			}
 		}
 		return 0;
 	}
 
-
-	public static int game_check(){
-
+	/**
+	 * 盤面に空きがあるか調べるメソッド
+	 * @return 空きがあれば1を返す。無ければ0を返す。
+	 */
+	public static int game_end(){
+		for(int i = 0; i < 8; i++){
+			for(int j = 0; j < 8; j++){
+				if(banmen[i][j] == 0){
+					return 1;
+				}
+			}
+		}
+		return 0;
 	}
 
 
